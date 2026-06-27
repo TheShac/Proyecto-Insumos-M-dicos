@@ -24,6 +24,7 @@ export async function iniciarConsumidores() {
         bodegaId: resultado.bodegaId,
         estado: resultado.estado,
         timestamp: new Date().toISOString(),
+        disponibles: resultado.disponibles,
       });
 
       await producer.send({

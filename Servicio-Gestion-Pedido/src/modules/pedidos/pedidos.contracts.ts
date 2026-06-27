@@ -34,6 +34,7 @@ export const reservadoSchema = z.object({
   bodegaId: z.string(),
   estado: z.enum(["RESERVADO", "SIN_STOCK"]),
   timestamp: z.string(),
+  disponibles: z.number(),
 });
 
 // Evento final que S1 recibe desde S3

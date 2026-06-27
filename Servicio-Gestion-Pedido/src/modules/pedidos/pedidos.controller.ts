@@ -37,3 +37,7 @@ export function streamEstados(req: Request, res: Response) {
   agregarCliente(res);
   req.on("close", () => quitarCliente(res));
 }
+
+export async function listarEventos(_req: Request, res: Response) {
+  res.json(await service.listarEventos());
+}

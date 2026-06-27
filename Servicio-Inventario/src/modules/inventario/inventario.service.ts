@@ -7,6 +7,7 @@ type ResultadoReserva = {
   estado: "RESERVADO" | "SIN_STOCK";
   unidadesReservadas: string[];
   bodegaId: string;
+  disponibles: number;
 };
 
 export async function reservarStock(pedido: PedidoCreado): Promise<ResultadoReserva> {
@@ -17,6 +18,7 @@ export async function reservarStock(pedido: PedidoCreado): Promise<ResultadoRese
       estado: previa[0].estado,
       unidadesReservadas: (previa[0].seriales as string[]) ?? [],
       bodegaId: "BOD-CENTRAL",
+      disponibles: 0,
     };
   }
 
@@ -37,7 +39,7 @@ export async function reservarStock(pedido: PedidoCreado): Promise<ResultadoRese
         estado: "SIN_STOCK",
         seriales: [],
       });
-      return { estado: "SIN_STOCK", unidadesReservadas: [], bodegaId: "BOD-CENTRAL" };
+      return { estado: "SIN_STOCK", unidadesReservadas: [], bodegaId: "BOD-CENTRAL", disponibles: disponibles.length };
     }
 
     const seriales = disponibles.map((u) => u.serial);
@@ -59,6 +61,6 @@ export async function reservarStock(pedido: PedidoCreado): Promise<ResultadoRese
       seriales,
     });
 
-    return { estado: "RESERVADO", unidadesReservadas: seriales, bodegaId };
+    return { estado: "RESERVADO", unidadesReservadas: seriales, bodegaId, disponibles: disponibles.length };
   });
 }

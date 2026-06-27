@@ -28,5 +28,6 @@ export const reservadoSchema = z.object({
   bodegaId: z.string(),
   estado: z.enum(["RESERVADO", "SIN_STOCK"]),
   timestamp: z.string(),
+  disponibles: z.number(),
 });
 export type Reservado = z.infer<typeof reservadoSchema>;

@@ -33,3 +33,7 @@ export async function actualizarEstado(
   await db.update(pedidos).set({ estado, ...extra }).where(eq(pedidos.id, id));
   await registrarHistorial(id, estado, detalle);
 }
+
+export async function listarEventos(limite = 30) {
+  return db.select().from(historialEstados).orderBy(desc(historialEstados.createdAt)).limit(limite);
+}
