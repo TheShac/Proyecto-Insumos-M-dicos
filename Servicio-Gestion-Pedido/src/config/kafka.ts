@@ -7,11 +7,10 @@ export const kafka = new Kafka({
 });
 
 export const producer = kafka.producer({
-  createPartitioner: Partitioners.LegacyPartitioner, // silencia el WARN del partitioner
+  createPartitioner: Partitioners.LegacyPartitioner,
 });
 export const consumer = kafka.consumer({ groupId: env.KAFKA_GROUP_ID });
 
-// Crea los topics si no existen
 export async function asegurarTopics(topics: string[]) {
   const admin = kafka.admin();
   await admin.connect();

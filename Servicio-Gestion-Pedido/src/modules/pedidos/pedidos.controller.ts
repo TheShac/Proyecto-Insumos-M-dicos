@@ -7,9 +7,13 @@ import type { CrearPedidoInput } from "./pedidos.contracts";
 export async function crearPedido(req: Request, res: Response) {
   const data = req.body as CrearPedidoInput;
   const pedidoId = await service.crearPedido(data);
-  // dispara la cadena asíncrona (no bloquea la respuesta)
   await publicarPedidoCreado(pedidoId, data);
-  res.status(202).json({ pedidoId, estado: "RECIBIDO", mensaje: "Pedido en proceso" });
+
+  res.status(202).json({
+    pedido_id: pedidoId,
+    estado: "RECIBIDO",
+    mensaje: `Pedido recibido con ${data.items.length} insumo(s). Búsqueda en proceso.`,
+  });
 }
 
 export async function listarPedidos(_req: Request, res: Response) {
@@ -26,7 +30,10 @@ export async function obtenerPedido(req: Request, res: Response) {
   res.json(pedido);
 }
 
-// Stream SSE para el frontend
+export async function listarEventos(_req: Request, res: Response) {
+  res.json(await service.listarEventos());
+}
+
 export function streamEstados(req: Request, res: Response) {
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
@@ -36,8 +43,4 @@ export function streamEstados(req: Request, res: Response) {
 
   agregarCliente(res);
   req.on("close", () => quitarCliente(res));
-}
-
-export async function listarEventos(_req: Request, res: Response) {
-  res.json(await service.listarEventos());
 }

@@ -1,17 +1,17 @@
-import { drizzle } from "drizzle-orm/mysql2";
-import { migrate } from "drizzle-orm/mysql2/migrator";
-import mysql from "mysql2/promise";
-import { env } from "../config/env";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { Pool } from "pg";
+import "dotenv/config";
 
 async function main() {
-  const connection = await mysql.createConnection(env.DATABASE_URL);
-  const db = drizzle(connection);
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+  const db = drizzle(pool);
 
   console.log("Aplicando migraciones...");
   await migrate(db, { migrationsFolder: "./drizzle" });
   console.log("Migraciones aplicadas correctamente.");
 
-  await connection.end();
+  await pool.end();
   process.exit(0);
 }
 

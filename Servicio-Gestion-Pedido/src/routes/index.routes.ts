@@ -5,10 +5,13 @@ import { crearPedidoSchema } from "../modules/pedidos/pedidos.contracts";
 
 export const router = Router();
 
-router.get("/health", (_req, res) => res.json({ status: "ok" }));
+router.get("/health", (_req, res) =>
+  res.json({ status: "ok", servicio: "pedidos" })
+);
+
+router.get("/pedidos/stream/estados", ctrl.streamEstados);
 
 router.post("/pedidos", validate(crearPedidoSchema), ctrl.crearPedido);
 router.get("/pedidos", ctrl.listarPedidos);
 router.get("/pedidos/:id", ctrl.obtenerPedido);
-router.get("/pedidos/stream/estados", ctrl.streamEstados);
 router.get("/eventos", ctrl.listarEventos);
