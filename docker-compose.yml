@@ -69,6 +69,46 @@ services:
     volumes:
       - mysql_contabilidad_data:/var/lib/mysql
 
+  servicio-gestion-pedido:
+    build: 
+      context: ./Servicio-Gestion-Pedido
+    container_name: servicio-gestion-pedido
+    depends_on:
+      - kafka
+      - mysql-pedidos
+
+  servicio-inventario:
+    build: 
+      context: ./Servicio-Inventario
+    container_name: servicio-inventario
+    depends_on:
+      - kafka
+      - mysql-inventario
+
+  servicio-contabilidad:
+    build: 
+      context: ./Servicio-Contabilidad
+    container_name: servicio-contabilidad
+    depends_on:
+      - kafka
+      - mysql-contabilidad
+
+  frontend:
+    build: 
+      context: ./Frontend
+    container_name: frontend
+    ports:
+      - "3000:3000" # Puerto público para ver la interfaz en localhost:3000
+
+  api-gateway:
+    build: 
+      context: ./Api-gateway
+    container_name: api-gateway
+    ports:
+      - "80:80" # Tu Gateway recibe el tráfico público principal
+    depends_on:
+      - servicio-gestion-pedido
+
 volumes:
   kafka_data:
   mysql_pedidos_data:
