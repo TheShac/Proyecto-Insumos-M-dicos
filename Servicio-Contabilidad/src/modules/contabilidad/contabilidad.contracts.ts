@@ -1,31 +1,42 @@
 import { z } from "zod";
 
 export const TOPICS = {
-  RESERVADO: "insumos.reservado",
-  PROCESO_COMPLETADO: "insumos.proceso.completado",
+  STOCK_RESERVADO: "insumos.reservado",
+  CUENTA_EMITIDA: "insumos.proceso.completado",
 } as const;
 
-// Evento que llega desde S2
-export const reservadoSchema = z.object({
-  pedidoId: z.string(),
+export const wrapperSchema = z.object({
+  id_evento: z.string(),
+  timestamp: z.string(),
+  tipo_evento: z.string(),
+  origen_servicio: z.string(),
+  datos: z.unknown(),
+});
+
+export const stockReservadoDatosSchema = z.object({
+  pedido_id: z.string(),
   insumo: z.string(),
   cantidad: z.number(),
+  estado_reserva: z.enum(["RESERVADO", "SIN_STOCK"]),
+  unidades_reservadas: z.array(z.string()),
+  disponibles: z.number(),
+  total_items: z.number(),
   pabellon: z.string(),
-  fichaPaciente: z.string().optional(),
-  unidadesReservadas: z.array(z.string()),
-  bodegaId: z.string(),
-  estado: z.enum(["RESERVADO", "SIN_STOCK"]),
-  timestamp: z.string(),
+  ficha_paciente: z.string().optional(),
 });
-export type Reservado = z.infer<typeof reservadoSchema>;
+export type StockReservadoDatos = z.infer<typeof stockReservadoDatosSchema>;
 
-// Evento final que S3 publica hacia S1
-export const procesoCompletadoSchema = z.object({
-  pedidoId: z.string(),
-  costoTotal: z.number(),
-  folioContable: z.string(),
-  fichaPaciente: z.string().optional(),
-  estadoFinal: z.literal("COMPLETADO"),
-  timestamp: z.string(),
+export const cuentaEmitidaDatosSchema = z.object({
+  cuenta_id: z.string(),
+  pedido_id: z.string(),
+  costo_total: z.number(),
+  estado_pago: z.literal("PENDIENTE"),
+  ficha_paciente: z.string().optional(),
+  items_facturados: z.array(z.object({
+    insumo: z.string(),
+    cantidad: z.number(),
+    precio_unitario: z.number(),
+    subtotal: z.number(),
+  })),
 });
-export type ProcesoCompletado = z.infer<typeof procesoCompletadoSchema>;
+export type CuentaEmitidaDatos = z.infer<typeof cuentaEmitidaDatosSchema>;
