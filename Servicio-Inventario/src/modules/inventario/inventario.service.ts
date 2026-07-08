@@ -1,66 +1,95 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../../config/db";
 import { unidadesInsumo, reservas } from "../../db/schema";
-import type { PedidoCreado, Reservado } from "./inventario.contracts";
 
 type ResultadoReserva = {
   estado: "RESERVADO" | "SIN_STOCK";
   unidadesReservadas: string[];
-  bodegaId: string;
   disponibles: number;
 };
 
-export async function reservarStock(pedido: PedidoCreado): Promise<ResultadoReserva> {
-  // Idempotencia: si ya reservamos este pedido, devolvemos lo guardado
-  const previa = await db.select().from(reservas).where(eq(reservas.pedidoId, pedido.pedidoId));
+export async function reservarStockItem(params: {
+  pedidoId: string;
+  insumo: string;
+  cantidad: number;
+}): Promise<ResultadoReserva> {
+
+  const previa = await db
+    .select()
+    .from(reservas)
+    .where(
+      and(
+        eq(reservas.pedidoId, params.pedidoId),
+        eq(reservas.insumo, params.insumo)
+      )
+    );
+
   if (previa[0]) {
+    console.log(`[S2] Reserva ya existente para ${params.pedidoId}/${params.insumo}, reutilizando`);
     return {
       estado: previa[0].estado,
       unidadesReservadas: (previa[0].seriales as string[]) ?? [],
-      bodegaId: "BOD-CENTRAL",
       disponibles: 0,
     };
   }
 
   return await db.transaction(async (tx) => {
-    // Buscar unidades disponibles del insumo pedido
+
     const disponibles = await tx
       .select()
       .from(unidadesInsumo)
-      .where(and(eq(unidadesInsumo.insumo, pedido.insumo), eq(unidadesInsumo.estado, "DISPONIBLE")))
-      .limit(pedido.cantidad)
-      .for("update"); // bloqueo de filas para evitar reservas simultáneas
+      .where(
+        and(
+          eq(unidadesInsumo.insumo, params.insumo),
+          eq(unidadesInsumo.estado, "DISPONIBLE")
+        )
+      )
+      .limit(params.cantidad)
+      .for("update");
 
-    if (disponibles.length < pedido.cantidad) {
+    const cantidadDisponible = disponibles.length;
+
+    if (cantidadDisponible < params.cantidad) {
       await tx.insert(reservas).values({
-        pedidoId: pedido.pedidoId,
-        insumo: pedido.insumo,
-        cantidad: pedido.cantidad,
+        pedidoId: params.pedidoId,
+        insumo: params.insumo,
+        cantidad: params.cantidad,
         estado: "SIN_STOCK",
         seriales: [],
       });
-      return { estado: "SIN_STOCK", unidadesReservadas: [], bodegaId: "BOD-CENTRAL", disponibles: disponibles.length };
+
+      return {
+        estado: "SIN_STOCK" as const,
+        unidadesReservadas: [],
+        disponibles: cantidadDisponible,
+      };
     }
 
     const seriales = disponibles.map((u) => u.serial);
-    const bodegaId = disponibles[0].bodegaId;
 
-    // Marcar cada unidad como RESERVADA y atarla al pedido
     for (const unidad of disponibles) {
       await tx
         .update(unidadesInsumo)
-        .set({ estado: "RESERVADO", pedidoId: pedido.pedidoId })
+        .set({
+          estado: "RESERVADO",
+          pedidoId: params.pedidoId,
+          updatedAt: new Date(),
+        })
         .where(eq(unidadesInsumo.id, unidad.id));
     }
 
     await tx.insert(reservas).values({
-      pedidoId: pedido.pedidoId,
-      insumo: pedido.insumo,
-      cantidad: pedido.cantidad,
+      pedidoId: params.pedidoId,
+      insumo: params.insumo,
+      cantidad: params.cantidad,
       estado: "RESERVADO",
       seriales,
     });
 
-    return { estado: "RESERVADO", unidadesReservadas: seriales, bodegaId, disponibles: disponibles.length };
+    return {
+      estado: "RESERVADO" as const,
+      unidadesReservadas: seriales,
+      disponibles: cantidadDisponible,
+    };
   });
 }

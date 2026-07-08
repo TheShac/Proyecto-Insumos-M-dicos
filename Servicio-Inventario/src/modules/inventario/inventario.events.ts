@@ -1,38 +1,72 @@
+import { randomUUID } from "crypto";
 import { producer, consumer } from "../../config/kafka";
-import { TOPICS, pedidoCreadoSchema, reservadoSchema } from "./inventario.contracts";
-import { reservarStock } from "./inventario.service";
+import {
+  TOPICS,
+  wrapperSchema,
+  pedidoCreadoDatosSchema,
+} from "./inventario.contracts";
+import { reservarStockItem } from "./inventario.service";
 
 export async function iniciarConsumidores() {
   await consumer.subscribe({ topic: TOPICS.PEDIDO_CREADO, fromBeginning: false });
 
   await consumer.run({
     eachMessage: async ({ message }) => {
-      const raw = JSON.parse(message.value!.toString());
-      const pedido = pedidoCreadoSchema.parse(raw);
+      try {
+        const raw = JSON.parse(message.value!.toString());
+        const wrapper = wrapperSchema.parse(raw);
+        const datos = pedidoCreadoDatosSchema.parse(wrapper.datos);
 
-      console.log(`[S2] Pedido recibido ${pedido.pedidoId} — ${pedido.cantidad}x ${pedido.insumo}`);
+        console.log(
+          `[S2] Pedido recibido ${datos.pedido_id} — ` +
+          `${datos.items.length} ítem(s): ${datos.items.map(i => `${i.cantidad}x ${i.insumo}`).join(", ")}`
+        );
 
-      const resultado = await reservarStock(pedido);
+        for (const item of datos.items) {
+          const resultado = await reservarStockItem({
+            pedidoId: datos.pedido_id,
+            insumo: item.insumo,
+            cantidad: item.cantidad,
+          });
 
-      const evento = reservadoSchema.parse({
-        pedidoId: pedido.pedidoId,
-        insumo: pedido.insumo,
-        cantidad: pedido.cantidad,
-        pabellon: pedido.pabellon,
-        fichaPaciente: pedido.fichaPaciente,
-        unidadesReservadas: resultado.unidadesReservadas,
-        bodegaId: resultado.bodegaId,
-        estado: resultado.estado,
-        timestamp: new Date().toISOString(),
-        disponibles: resultado.disponibles,
-      });
+          await producer.send({
+            topic: TOPICS.STOCK_RESERVADO,
+            messages: [
+              {
+                key: datos.pedido_id,
+                value: JSON.stringify({
+                  id_evento: `evt-inv-${randomUUID().slice(0, 8)}`,
+                  timestamp: new Date().toISOString(),
+                  tipo_evento: "STOCK_RESERVADO",
+                  origen_servicio: "servicio-inventario",
+                  datos: {
+                    pedido_id: datos.pedido_id,
+                    insumo: item.insumo,
+                    cantidad: item.cantidad,
+                    estado_reserva: resultado.estado,
+                    unidades_reservadas: resultado.unidadesReservadas,
+                    disponibles: resultado.disponibles,
+                    total_items: datos.items.length,
+                    pabellon: datos.pabellon,
+                    ficha_paciente: datos.ficha_paciente,
+                  },
+                }),
+              },
+            ],
+          });
 
-      await producer.send({
-        topic: TOPICS.RESERVADO,
-        messages: [{ key: pedido.pedidoId, value: JSON.stringify(evento) }],
-      });
+          console.log(
+            `[S2] ${datos.pedido_id}/${item.insumo} → ` +
+            `${resultado.estado} ` +
+            (resultado.estado === "RESERVADO"
+              ? `[${resultado.unidadesReservadas.join(", ")}]`
+              : `(disponibles: ${resultado.disponibles}, solicitados: ${item.cantidad})`)
+          );
+        }
 
-      console.log(`[S2] Publicado ${resultado.estado} para ${pedido.pedidoId}`);
+      } catch (err) {
+        console.error("[S2] Error procesando mensaje:", err);
+      }
     },
   });
 }
