@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   kafka:
     image: apache/kafka:3.8.0
@@ -22,7 +24,6 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
-  # UI web para inspeccionar topics y mensajes → http://localhost:8080
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
