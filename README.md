@@ -1,8 +1,8 @@
-#Sistema de Monitoreo de Insumos Médicos
+Sistema de Monitoreo de Insumos Médicos
 
 Una plataforma distribuida para la trazabilidad y gestión de insumos médicos hospitalarios. Este sistema permite a los profesionales de la salud solicitar insumos, reservar stock y emitir cobros de manera asíncrona, garantizando la resiliencia y escalabilidad de las operaciones.
 
-##Arquitectura del Sistema
+Arquitectura del Sistema
 
 El proyecto está construido bajo una **Arquitectura de Microservicios Orientada a Eventos**:
 
@@ -15,7 +15,7 @@ El proyecto está construido bajo una **Arquitectura de Microservicios Orientada
 - **Bus de Eventos:** Apache Kafka orquesta la comunicación asíncrona entre servicios (eventos como `PEDIDO_CREADO` o `STOCK_RESERVADO`).
 - **Bases de Datos:** Patrón *Database-per-service* utilizando PostgreSQL para asegurar el aislamiento de datos.
 
-##Despliegue Local
+Despliegue Local
 
 Para levantar el ecosistema completo en tu máquina local:
 
