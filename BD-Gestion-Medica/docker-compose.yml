@@ -1,0 +1,143 @@
+services:
+  # --- BASE DE DATOS 1: GESTIÓN DE PEDIDOS ---
+  bd-pedidos:
+    image: postgres:15-alpine
+    container_name: g5-bd-pedidos
+    command: postgres -c logging_collector=on -c log_destination=stderr
+    environment:
+      POSTGRES_DB: pedidos_db
+      POSTGRES_USER: user_pedidos
+      POSTGRES_PASSWORD: password_pedidos
+    volumes:
+      - vol_pedidos_data:/var/lib/postgresql/data
+      - ./init-pedidos.sql:/docker-entrypoint-initdb.d/init-pedidos.sql
+    ports:
+      - "5431:5432"
+    networks:
+      - red-privada-pedidos # AISLADA: Solo su microservicio podrá entrar aquí
+
+  # --- BASE DE DATOS 2: INVENTARIO DE BODEGA ---
+  bd-inventario:
+    image: postgres:15-alpine
+    container_name: g5-bd-inventario
+    command: postgres -c logging_collector=on -c log_destination=stderr
+    environment:
+      POSTGRES_DB: inventario_db
+      POSTGRES_USER: user_inventario
+      POSTGRES_PASSWORD: password_inventario
+    volumes:
+      - vol_inventario_data:/var/lib/postgresql/data
+      - ./init-inventario.sql:/docker-entrypoint-initdb.d/init-inventario.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - red-privada-inventario # AISLADA: Solo su microservicio podrá entrar aquí
+
+  # --- BASE DE DATOS 3: CONTABILIDAD MÉDICA ---
+  bd-contabilidad:
+    image: postgres:15-alpine
+    container_name: g5-bd-contabilidad
+    command: postgres -c logging_collector=on -c log_destination=stderr
+    environment:
+      POSTGRES_DB: contabilidad_db
+      POSTGRES_USER: user_contabilidad
+      POSTGRES_PASSWORD: password_contabilidad
+    volumes:
+      - vol_contabilidad_data:/var/lib/postgresql/data
+      - ./init-contabilidad.sql:/docker-entrypoint-initdb.d/init-contabilidad.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - red-privada-contabilidad # AISLADA: Solo su microservicio podrá entrar aquí
+
+  # --- RESPALDOS AUTOMÁTICOS: PEDIDOS ---
+  respaldos-pedidos:
+    image: prodrigestivill/postgres-backup-local:15-alpine
+    container_name: g5-respaldos-pedidos
+    restart: always
+    volumes:
+      - ./backups/pedidos:/backups
+    environment:
+      - POSTGRES_HOST=bd-pedidos
+      - POSTGRES_USER=user_pedidos
+      - POSTGRES_PASSWORD=password_pedidos
+      - POSTGRES_DB=pedidos_db
+      - SCHEDULE=@every 10m
+      - BACKUP_KEEP_MINS=60
+    networks:
+      - red-privada-pedidos
+    depends_on:
+      - bd-pedidos
+
+  # --- RESPALDOS AUTOMÁTICOS: INVENTARIO ---
+  respaldos-inventario:
+    image: prodrigestivill/postgres-backup-local:15-alpine
+    container_name: g5-respaldos-inventario
+    restart: always
+    volumes:
+      - ./backups/inventario:/backups
+    environment:
+      - POSTGRES_HOST=bd-inventario
+      - POSTGRES_USER=user_inventario
+      - POSTGRES_PASSWORD=password_inventario
+      - POSTGRES_DB=inventario_db
+      - SCHEDULE=@every 10m
+      - BACKUP_KEEP_MINS=60
+    networks:
+      - red-privada-inventario
+    depends_on:
+      - bd-inventario
+
+  # --- RESPALDOS AUTOMÁTICOS: CONTABILIDAD ---
+  respaldos-contabilidad:
+    image: prodrigestivill/postgres-backup-local:15-alpine
+    container_name: g5-respaldos-contabilidad
+    restart: always
+    volumes:
+      - ./backups/contabilidad:/backups
+    environment:
+      - POSTGRES_HOST=bd-contabilidad
+      - POSTGRES_USER=user_contabilidad
+      - POSTGRES_PASSWORD=password_contabilidad
+      - POSTGRES_DB=contabilidad_db
+      - SCHEDULE=@every 10m
+      - BACKUP_KEEP_MINS=60
+    networks:
+      - red-privada-contabilidad
+    depends_on:
+      - bd-contabilidad
+
+  # --- HERRAMIENTA VISUAL: PGADMIN 4 ---
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: g5-pgadmin
+    environment:
+      PGADMIN_SETUP_EMAIL: admin@grupo5.cl
+      PGADMIN_SETUP_PASSWORD: adminpassword
+      PGADMIN_DEFAULT_EMAIL: admin@grupo5.cl
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "8080:80"
+    networks:
+      - red-privada-pedidos       # pgAdmin se conecta a las tres redes solo para desarrollo
+      - red-privada-inventario
+      - red-privada-contabilidad
+    depends_on:
+      - bd-pedidos
+      - bd-inventario
+      - bd-contabilidad
+
+# --- DECLARACIÓN DE VOLÚMENES ---
+volumes:
+  vol_pedidos_data:
+  vol_inventario_data:
+  vol_contabilidad_data:
+
+# --- DECLARACIÓN DE REDES INDEPENDIENTES Y SEGMENTADAS ---
+networks:
+  red-privada-pedidos:
+    driver: bridge
+  red-privada-inventario:
+    driver: bridge
+  red-privada-contabilidad:
+    driver: bridge
