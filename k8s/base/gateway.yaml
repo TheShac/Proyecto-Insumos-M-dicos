@@ -20,7 +20,7 @@ spec:
       containers:
         - name: api-gateway
 
-          image: ghcr.io/theshac/api-gateway:latest
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/api-gateway:latest
           imagePullPolicy: Always
 
           ports:

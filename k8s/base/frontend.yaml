@@ -20,7 +20,7 @@ spec:
       containers:
         - name: frontend
 
-          image: ghcr.io/theshac/frontend:latest
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/frontend:latest
           imagePullPolicy: Always
 
           ports:

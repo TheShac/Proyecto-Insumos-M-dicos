@@ -19,7 +19,7 @@ spec:
       containers:
         - name: servicio-inventario
 
-          image: ghcr.io/theshac/servicio-inventario:latest
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-inventario:latest
           imagePullPolicy: Always
 
           ports:

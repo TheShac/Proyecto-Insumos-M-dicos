@@ -7,18 +7,18 @@ resources:
   - namespace.yaml
   - ../../base
 
-# Las imágenes :prod las publica GitHub Actions en cada push a main
+# Tags que publica GitHub Actions en cada push a main
 images:
-  - name: ghcr.io/theshac/servicio-gestion-pedido
-    newTag: prod
-  - name: ghcr.io/theshac/servicio-inventario
-    newTag: prod
-  - name: ghcr.io/theshac/servicio-contabilidad
-    newTag: prod
-  - name: ghcr.io/theshac/frontend
-    newTag: prod
-  - name: ghcr.io/theshac/api-gateway
-    newTag: prod
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-gestion-pedido
+    newTag: prod-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-inventario
+    newTag: prod-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-contabilidad
+    newTag: prod-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/frontend
+    newTag: prod-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/api-gateway
+    newTag: prod-latest
 
 # En producción se entra por prod.grupo5.uta.cl
 patches:

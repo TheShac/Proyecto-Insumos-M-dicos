@@ -7,15 +7,15 @@ resources:
   - namespace.yaml
   - ../../base
 
-# Las imágenes :qa las publica GitHub Actions en cada push a develop
+# Tags que publica GitHub Actions en cada push a develop
 images:
-  - name: ghcr.io/theshac/servicio-gestion-pedido
-    newTag: qa
-  - name: ghcr.io/theshac/servicio-inventario
-    newTag: qa
-  - name: ghcr.io/theshac/servicio-contabilidad
-    newTag: qa
-  - name: ghcr.io/theshac/frontend
-    newTag: qa
-  - name: ghcr.io/theshac/api-gateway
-    newTag: qa
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-gestion-pedido
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-inventario
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-contabilidad
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/frontend
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/api-gateway
+    newTag: qa-latest

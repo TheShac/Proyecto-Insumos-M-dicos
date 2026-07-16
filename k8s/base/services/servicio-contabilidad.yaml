@@ -19,7 +19,7 @@ spec:
       containers:
         - name: servicio-contabilidad
 
-          image: ghcr.io/theshac/servicio-contabilidad:latest
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-contabilidad:latest
           imagePullPolicy: Always
 
           ports:

@@ -20,7 +20,7 @@ spec:
       containers:
         - name: servicio-gestion-pedido
 
-          image: ghcr.io/theshac/servicio-gestion-pedido:latest
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-gestion-pedido:latest
           imagePullPolicy: Always
 
           ports:
