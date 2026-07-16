@@ -1,4 +1,4 @@
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, inArray } from "drizzle-orm";
 import { db } from "../../config/db";
 import { pedidos, pedidoItems, historialEstados } from "../../db/schema";
 import type { CrearPedidoInput } from "./pedidos.contracts";
@@ -44,7 +44,19 @@ export async function crearPedido(data: CrearPedidoInput): Promise<string> {
 }
 
 export async function listarPedidos() {
-  return db.select().from(pedidos).orderBy(desc(pedidos.createdAt));
+  const filas = await db.select().from(pedidos).orderBy(desc(pedidos.createdAt));
+  if (filas.length === 0) return filas;
+
+  const ids = filas.map((p) => p.id);
+  const items = await db
+    .select()
+    .from(pedidoItems)
+    .where(inArray(pedidoItems.pedidoId, ids));
+
+  return filas.map((p) => ({
+    ...p,
+    items: items.filter((i) => i.pedidoId === p.id),
+  }));
 }
 
 export async function obtenerPedido(id: string) {

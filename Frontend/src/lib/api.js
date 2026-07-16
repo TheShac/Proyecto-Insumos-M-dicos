@@ -31,6 +31,7 @@ export const CATALOGO = [
   { slug: "guantes_caja", nombre: "Caja de Guantes Estériles" },
   { slug: "mascarilla_n95", nombre: "Mascarilla N95" },
   { slug: "jeringa_10ml", nombre: "Jeringa 10ml" },
+  { slug: "monitor_signos", nombre: "Monitor de Signos Vitales" },
 ];
 
 export function nombreInsumo(slug) {
@@ -43,15 +44,21 @@ export const ESTADOS = {
   RECIBIDO: { label: "Recibido", cls: "recibido" },
   BUSCANDO_STOCK: { label: "Buscando stock", cls: "buscando" },
   RESERVADO: { label: "Reservado", cls: "reservado" },
+  PARCIAL: { label: "Parcial", cls: "parcial" },
   SIN_STOCK: { label: "Sin stock", cls: "sinstock" },
   COMPLETADO: { label: "Facturado", cls: "completado" },
 };
+
+// Acceso seguro: un estado desconocido no debe romper el render.
+export function estadoInfo(estado) {
+  return ESTADOS[estado] ?? { label: estado, cls: "recibido" };
+}
 
 // ¡Cambiado para reflejar fielmente tus diapositivas!
 export function servicioDeEstado(estado) {
   if (estado === "RECIBIDO" || estado === "BUSCANDO_STOCK")
     return "Sistema Médico";
-  if (estado === "RESERVADO" || estado === "SIN_STOCK")
+  if (estado === "RESERVADO" || estado === "PARCIAL" || estado === "SIN_STOCK")
     return "Bodega Inteligente";
   return "Contabilidad Médica";
 }
@@ -75,4 +82,10 @@ export function listarEventos() {
 }
 export function crearPedido(body) {
   return postJSON("/pedidos", body);
+}
+export function obtenerStock() {
+  return getJSON("/inventario/stock");
+}
+export function listarCuentas() {
+  return getJSON("/contabilidad/cuentas");
 }

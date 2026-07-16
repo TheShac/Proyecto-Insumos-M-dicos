@@ -3,6 +3,8 @@ import {
   listarPedidos,
   listarEventos,
   crearPedido as apiCrear,
+  obtenerStock,
+  listarCuentas,
   servicioDeEstado,
 } from "../lib/api";
 
@@ -11,131 +13,65 @@ export function useDashboard() {
   const eventos = ref([]);
   const conectado = ref(false);
   const enviando = ref(false);
+  const errorEnvio = ref("");
 
-  // NUEVOS ESTADOS COMPARTIDOS DE LOS SERVICIOS 2 Y 3
-  const inventario = ref([
-    { slug: "tanque_oxigeno", stock: 8 },
-    { slug: "suero_fisiologico", stock: 15 },
-    { slug: "guantes_caja", stock: 12 },
-    { slug: "mascarilla_n95", stock: 5 },
-    { slug: "jeringa_10ml", stock: 14 },
-  ]);
-
+  // Datos reales de los servicios 2 y 3 (vía API Gateway, solo lectura)
+  const inventario = ref([]);
   const facturas = ref([]);
 
   let source = null;
 
-  async function cargarTodo() {
-    const [p, e] = await Promise.all([listarPedidos(), listarEventos()]);
-    pedidos.value = p || [];
-    eventos.value = e || [];
+  // Las filas del historial vienen como {id, pedidoId, estado, detalle, createdAt};
+  // el feed espera {key, pedidoId, servicio, estado, detalle, ts}.
+  function mapearEvento(fila) {
+    return {
+      key: `db-${fila.id}`,
+      pedidoId: fila.pedidoId,
+      servicio: servicioDeEstado(fila.estado),
+      estado: fila.estado,
+      detalle: fila.detalle,
+      ts: fila.createdAt,
+    };
   }
 
   async function refrescarPedidos() {
     const p = await listarPedidos();
-    if (p && p.length > 0) pedidos.value = p;
+    if (Array.isArray(p)) pedidos.value = p;
   }
 
-  function inyectarEventoLocal(pedidoId, estado, detalle) {
-    eventos.value = [
-      {
-        key: `sim-${pedidoId}-${estado}-${Date.now()}`,
-        pedidoId: pedidoId,
-        servicio: servicioDeEstado(estado),
-        estado: estado,
-        detalle: detalle,
-        ts: new Date().toISOString(),
-      },
-      ...eventos.value,
-    ].slice(0, 50);
+  async function refrescarInventario() {
+    const stock = await obtenerStock();
+    if (Array.isArray(stock)) {
+      inventario.value = stock.map((s) => ({
+        slug: s.insumo,
+        stock: s.disponibles,
+        total: s.total,
+      }));
+    }
+  }
+
+  async function refrescarFacturas() {
+    const cuentas = await listarCuentas();
+    if (Array.isArray(cuentas)) facturas.value = cuentas;
+  }
+
+  async function cargarTodo() {
+    const [p, e] = await Promise.all([listarPedidos(), listarEventos()]);
+    pedidos.value = Array.isArray(p) ? p : [];
+    eventos.value = Array.isArray(e) ? e.map(mapearEvento) : [];
+    await Promise.all([refrescarInventario(), refrescarFacturas()]);
   }
 
   async function solicitar(input) {
     enviando.value = true;
+    errorEnvio.value = "";
     try {
       await apiCrear(input);
       await refrescarPedidos();
     } catch (error) {
-      console.value = false;
-      conectado.value = true;
-
-      const idFalso = "REQ-" + Math.floor(100000 + Math.random() * 900000);
-      const nuevoPedido = {
-        id: idFalso,
-        insumo: input.insumo,
-        cantidad: input.cantidad,
-        pabellon: input.pabellon,
-        enfermeroId: input.enfermeroId,
-        fichaPaciente: input.fichaPaciente || "FIC-GENERAL",
-        estado: "RECIBIDO",
-        createdAt: new Date().toISOString(),
-        costoTotal: null,
-      };
-
-      pedidos.value = [nuevoPedido, ...pedidos.value];
-      inyectarEventoLocal(
-        idFalso,
-        "RECIBIDO",
-        `Fase 1: Solicitud clínica de insumo despachada de forma asíncrona.`,
-      );
-
-      // T + 1.5 Segundos: Bodega Inteligente procesa e inicia búsqueda de stock
-      setTimeout(() => {
-        const idx = pedidos.value.findIndex((p) => p.id === idFalso);
-        if (idx >= 0) pedidos.value[idx].estado = "BUSCANDO_STOCK";
-        inyectarEventoLocal(
-          idFalso,
-          "BUSCANDO_STOCK",
-          "Fase 2: Bodega Inteligente leyó el tópico de pedidos. Verificando disponibilidad...",
-        );
-      }, 1500);
-
-      // T + 3.5 Segundos: Bodega confirma el bloqueo seguro de stock (SERVICIO 2 ACCIÓN)
-      setTimeout(() => {
-        const idx = pedidos.value.findIndex((p) => p.id === idFalso);
-        if (idx >= 0) pedidos.value[idx].estado = "RESERVADO";
-
-        // MODIFICACIÓN: Descontar stock del panel visual de bodega
-        const stockItem = inventario.value.find((i) => i.slug === input.insumo);
-        if (stockItem) {
-          stockItem.stock = Math.max(0, stockItem.stock - input.cantidad);
-        }
-
-        inyectarEventoLocal(
-          idFalso,
-          "RESERVADO",
-          `Fase 2: Unidades bloqueadas con éxito. Base de datos de Inventario actualizada.`,
-        );
-      }, 3500);
-
-      // T + 5.5 Segundos: Contabilidad Médica asocia el costo y cierra el flujo (SERVICIO 3 ACCIÓN)
-      setTimeout(() => {
-        const montoCalculado = input.cantidad * 24990;
-        const idx = pedidos.value.findIndex((p) => p.id === idFalso);
-
-        if (idx >= 0) {
-          pedidos.value[idx].estado = "COMPLETADO";
-          pedidos.value[idx].costoTotal = montoCalculado;
-        }
-
-        // MODIFICACIÓN: Inyectar fila contable en el panel visual del Servicio 3
-        facturas.value = [
-          {
-            ficha: input.fichaPaciente || "FIC-GENERAL",
-            insumo: input.insumo,
-            cantidad: input.cantidad,
-            monto: montoCalculado,
-            timestamp: new Date().toISOString(),
-          },
-          ...facturas.value,
-        ];
-
-        inyectarEventoLocal(
-          idFalso,
-          "COMPLETADO",
-          `Fase 3: Liquidación finalizada. Costo de ${montoCalculado} cargado a la ficha.`,
-        );
-      }, 5500);
+      console.error("No se pudo crear el pedido:", error);
+      errorEnvio.value =
+        "No se pudo enviar el pedido. Verifica que los servicios estén arriba.";
     } finally {
       enviando.value = false;
     }
@@ -151,8 +87,8 @@ export function useDashboard() {
         const data = JSON.parse(e.data);
         eventos.value = [
           {
-            key: `live-${data.pedidoId}-${data.estado}-${data.timestamp}`,
-            pedidoId: data.pedidoId,
+            key: `live-${data.pedido_id}-${data.estado}-${data.timestamp}`,
+            pedidoId: data.pedido_id,
             servicio: data.servicio,
             estado: data.estado,
             detalle: data.detalle,
@@ -161,16 +97,24 @@ export function useDashboard() {
           ...eventos.value,
         ].slice(0, 60);
 
-        const idx = pedidos.value.findIndex((p) => p.id === data.pedidoId);
+        const idx = pedidos.value.findIndex((p) => p.id === data.pedido_id);
         if (idx >= 0) {
           pedidos.value[idx] = { ...pedidos.value[idx], estado: data.estado };
-          if (data.estado === "COMPLETADO") refrescarPedidos();
-        } else {
-          refrescarPedidos();
+        }
+        refrescarPedidos();
+
+        // Cada paso del flujo altera inventario o contabilidad: refrescamos
+        // el panel correspondiente con los datos reales de cada servicio.
+        if (["RESERVADO", "PARCIAL", "SIN_STOCK"].includes(data.estado)) {
+          refrescarInventario();
+        }
+        if (data.estado === "COMPLETADO") {
+          refrescarInventario();
+          refrescarFacturas();
         }
       });
       source.onerror = () => {
-        if (pedidos.value.length === 0) conectado.value = false;
+        conectado.value = false;
       };
     } catch (err) {
       conectado.value = false;
@@ -186,6 +130,7 @@ export function useDashboard() {
     eventos,
     conectado,
     enviando,
+    errorEnvio,
     inventario,
     facturas,
     cargarTodo,

@@ -14,12 +14,16 @@ defineProps({ inventario: Array });
       >
       <h2>Stock - Bodega Inteligente</h2>
       <p>
-        Vista del inventario físico. En un flujo real, este componente disminuye
-        el stock de forma atómica al procesar el evento de Kafka.
+        Inventario físico real del servicio de bodega: el stock disminuye de
+        forma atómica cuando el servicio procesa el evento de Kafka.
       </p>
     </header>
 
-    <div class="inventario-grid">
+    <p v-if="!inventario.length" class="empty">
+      Sin datos de bodega. Verifica que el servicio de inventario esté arriba.
+    </p>
+
+    <div v-else class="inventario-grid">
       <div v-for="item in inventario" :key="item.slug" class="inventario-item">
         <div class="item-info">
           <span class="item-name">{{ nombreInsumo(item.slug) }}</span>
@@ -30,7 +34,7 @@ defineProps({ inventario: Array });
         <div class="progress-bar-bg">
           <div
             class="progress-bar-fill"
-            :style="{ width: Math.min((item.stock / 15) * 100, 100) + '%' }"
+            :style="{ width: Math.min((item.stock / (item.total || 15)) * 100, 100) + '%' }"
             :class="{ 'low-bar': item.stock <= 3 }"
           ></div>
         </div>
