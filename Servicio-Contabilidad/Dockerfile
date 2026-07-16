@@ -5,7 +5,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 COPY package.json ./
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --ignore-scripts
 
 COPY . .
 RUN pnpm build
@@ -17,7 +17,7 @@ WORKDIR /app
 RUN npm install -g pnpm
 
 COPY package.json ./
-RUN pnpm install --no-frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod --ignore-scripts
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/drizzle ./drizzle

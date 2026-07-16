@@ -32,7 +32,7 @@ jobs:
           cache: "pnpm"
           cache-dependency-path: Servicio-Gestion-Pedido/pnpm-lock.yaml
 
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: pnpm run build 
 
   docker-build-push:
@@ -91,7 +91,7 @@ jobs:
   deploy:
     name: Desplegar en el clúster K3s
     needs: docker-build-push
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.event_name == 'push'
     environment: ${{ needs.docker-build-push.outputs.env_name }}
     steps:
