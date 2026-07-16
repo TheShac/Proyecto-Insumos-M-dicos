@@ -13,7 +13,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/Frontend
 
 jobs:
   build-and-test:
@@ -45,6 +44,7 @@ jobs:
     outputs:
       image_tag: ${{ steps.vars.outputs.tag }}
       env_name: ${{ steps.vars.outputs.env_name }}
+      image_name: ${{ steps.repo.outputs.name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -97,7 +97,7 @@ jobs:
         env:
           NAMESPACE: grupo5-${{ needs.docker-build-push.outputs.env_name }}
         run: |
-          kubectl set image deployment/Frontend-deployment \
-            Frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image_tag }} \
+          kubectl set image deployment/frontend \
+            frontend=${{ env.REGISTRY }}/${{ needs.docker-build-push.outputs.image_name }}/frontend:${{ needs.docker-build-push.outputs.image_tag }} \
             -n "$NAMESPACE"
-          kubectl rollout status deployment/Frontend-deployment -n "$NAMESPACE" --timeout=120s
+          kubectl rollout status deployment/frontend -n "$NAMESPACE" --timeout=120s

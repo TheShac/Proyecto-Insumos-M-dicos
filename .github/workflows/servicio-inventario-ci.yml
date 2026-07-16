@@ -41,6 +41,10 @@ jobs:
     permissions:
       contents: read
       packages: write
+    outputs:
+      image_tag: ${{ steps.vars.outputs.tag }}
+      env_name: ${{ steps.vars.outputs.env_name }}
+      image_name: ${{ steps.repo.outputs.name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -83,10 +87,17 @@ jobs:
     needs: docker-build-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    environment: ${{ needs.docker-build-push.outputs.env_name }}
     steps:
       - name: Configurar kubectl con el kubeconfig del clúster
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
       - name: Actualizar imagen en el Deployment
-        run: echo "Nombre del Deployment"
+        env:
+          NAMESPACE: grupo5-${{ needs.docker-build-push.outputs.env_name }}
+        run: |
+          kubectl set image deployment/servicio-inventario \
+            servicio-inventario=ghcr.io/${{ needs.docker-build-push.outputs.image_name }}/servicio-inventario:${{ needs.docker-build-push.outputs.image_tag }} \
+            -n "$NAMESPACE"
+          kubectl rollout status deployment/servicio-inventario -n "$NAMESPACE" --timeout=120s
