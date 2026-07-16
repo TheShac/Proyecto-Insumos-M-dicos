@@ -1,10 +1,12 @@
 name: CI/CD API-Gateway
 
 on:
+  workflow_dispatch:
   push:
     branches: [develop, main]
     paths:
       - "Api-gateway/**"
+      - ".github/workflows/api-gateway-ci.yml"
   pull_request:
     branches: [develop, main]
     paths:
@@ -41,6 +43,9 @@ jobs:
           echo "env_name=$ENV_NAME" >> "$GITHUB_OUTPUT"
           echo "tag=${ENV_NAME}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
+      - name: Configurar Docker Buildx (necesario para cache type=gha)
+        uses: docker/setup-buildx-action@v3
+
       - name: Login en GitHub Container Registry
         uses: docker/login-action@v3
         with:
@@ -52,6 +57,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./Api-gateway
+          file: ./Api-gateway/dockerfile
           push: true
           tags: |
             ghcr.io/${{ steps.repo.outputs.name }}/api-gateway:${{ steps.vars.outputs.tag }}
