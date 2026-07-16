@@ -14,7 +14,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:3000", // ⚠️ confirma puerto real del API Gateway
+        target: "http://api-gateway", 
         changeOrigin: true,
       },
     },

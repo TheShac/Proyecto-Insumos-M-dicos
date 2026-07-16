@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-pedido
+
+data:
+  PORT: "3001"
+
+  DB_HOST: "postgres-pedidos"
+  DB_PORT: "5432"
+  DB_NAME: "pedidos_db"
+
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "servicio-pedidos"
+  KAFKA_GROUP_ID: "pedidos-group"

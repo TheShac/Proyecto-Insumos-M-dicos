@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-inventario
+
+data:
+  PORT: "3002"
+
+  DB_HOST: "postgres-inventario"
+  DB_PORT: "5432"
+  DB_NAME: "inventario_db"
+
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "servicio-inventario"
+  KAFKA_GROUP_ID: "inventario-group"
