@@ -1,19 +1,14 @@
-name: CI/CD Frontend
+name: CI/CD Servicio-Contabilidad
 
 on:
   push:
     branches: [develop, main]
     paths:
-      - "Frontend/**"
-      - ".github/workflows/frontend-ci.yml"
+      - "Servicio-Contabilidad/**"
   pull_request:
     branches: [develop, main]
     paths:
-      - "Frontend/**"
-
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/Frontend
+      - "Servicio-Contabilidad/**"
 
 jobs:
   build-and-test:
@@ -21,19 +16,22 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: ./Frontend
+        working-directory: ./Servicio-Contabilidad
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
 
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-          cache: "npm"
-          cache-dependency-path: Frontend/package-lock.json
+          cache: "pnpm"
+          cache-dependency-path: Servicio-Contabilidad/pnpm-lock.yaml
 
-      - run: npm ci
-      - run: npm run build
-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run build 
   docker-build-push:
     name: Build & Push imagen Docker
     needs: build-and-test
@@ -42,9 +40,6 @@ jobs:
     permissions:
       contents: read
       packages: write
-    outputs:
-      image_tag: ${{ steps.vars.outputs.tag }}
-      env_name: ${{ steps.vars.outputs.env_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -67,18 +62,18 @@ jobs:
       - name: Login en GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build y push de la imagen
         uses: docker/build-push-action@v6
         with:
-          context: ./Frontend
+          context: ./Servicio-Contabilidad
           push: true
           tags: |
-            ghcr.io/${{ steps.repo.outputs.name }}/frontend:${{ steps.vars.outputs.tag }}
-            ghcr.io/${{ steps.repo.outputs.name }}/frontend:${{ steps.vars.outputs.env_name }}-latest
+            ghcr.io/${{ steps.repo.outputs.name }}/servicio-contabilidad:${{ steps.vars.outputs.tag }}
+            ghcr.io/${{ steps.repo.outputs.name }}/servicio-contabilidad:${{ steps.vars.outputs.env_name }}-latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -87,17 +82,10 @@ jobs:
     needs: docker-build-push
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    environment: ${{ needs.docker-build-push.outputs.env_name }}
     steps:
       - name: Configurar kubectl con el kubeconfig del clúster
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
       - name: Actualizar imagen en el Deployment
-        env:
-          NAMESPACE: grupo5-${{ needs.docker-build-push.outputs.env_name }}
-        run: |
-          kubectl set image deployment/Frontend-deployment \
-            Frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.docker-build-push.outputs.image_tag }} \
-            -n "$NAMESPACE"
-          kubectl rollout status deployment/Frontend-deployment -n "$NAMESPACE" --timeout=120s
+        run: echo "Nombre del Deployment"
