@@ -12,10 +12,9 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: [".uta.cl"],
     proxy: {
       "/api": {
-        // Dentro de Docker el gateway se resuelve por nombre de servicio;
-        // en dev local (fuera de Docker) exportar API_PROXY_TARGET=http://localhost:80
         target: process.env.API_PROXY_TARGET || "http://api-gateway",
         changeOrigin: true,
       },

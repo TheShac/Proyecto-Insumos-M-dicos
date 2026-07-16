@@ -19,8 +19,8 @@ spec:
       containers:
         - name: servicio-contabilidad
 
-          image: servicio-contabilidad:local
-          imagePullPolicy: Never
+          image: ghcr.io/theshac/servicio-contabilidad:latest
+          imagePullPolicy: Always
 
           ports:
             - name: http
@@ -31,6 +31,34 @@ spec:
                 name: config-contabilidad
             - secretRef:
                 name: secret-contabilidad
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "384Mi"
+
+          # El arranque incluye migraciones + unión al grupo Kafka (~20-30s)
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
 
 ---
 apiVersion: v1
@@ -43,7 +71,8 @@ spec:
     app: servicio-contabilidad
 
   ports:
-    - port: 3003
+    - name: http
+      port: 3003
       targetPort: http
 
   type: ClusterIP
