@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servicio-contabilidad
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: servicio-contabilidad
+
+  template:
+    metadata:
+      labels:
+        app: servicio-contabilidad
+
+    spec:
+      containers:
+        - name: servicio-contabilidad
+
+          image: servicio-contabilidad:local
+          imagePullPolicy: Never
+
+          ports:
+            - name: http
+              containerPort: 3003
+
+          envFrom:
+            - configMapRef:
+                name: config-contabilidad
+            - secretRef:
+                name: secret-contabilidad
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servicio-contabilidad
+
+spec:
+  selector:
+    app: servicio-contabilidad
+
+  ports:
+    - port: 3003
+      targetPort: http
+
+  type: ClusterIP

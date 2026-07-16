@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: servicio-inventario
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: servicio-inventario
+
+  template:
+    metadata:
+      labels:
+        app: servicio-inventario
+
+    spec:
+      containers:
+        - name: servicio-inventario
+
+          image: servicio-inventario:local
+          imagePullPolicy: Never
+
+          ports:
+            - name: http
+              containerPort: 3002
+
+          envFrom:
+            - configMapRef:
+                name: config-inventario
+            - secretRef:
+                name: secret-inventario
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: servicio-inventario
+
+spec:
+  selector:
+    app: servicio-inventario
+
+  ports:
+    - port: 3002
+      targetPort: http
+
+  type: ClusterIP

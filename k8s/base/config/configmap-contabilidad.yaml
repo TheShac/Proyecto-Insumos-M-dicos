@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config-contabilidad
+
+data:
+  PORT: "3003"
+
+  DB_HOST: "postgres-contabilidad"
+  DB_PORT: "5432"
+  DB_NAME: "contabilidad_db"
+
+  KAFKA_BROKERS: "kafka:9092"
+  KAFKA_CLIENT_ID: "servicio-contabilidad"
+  KAFKA_GROUP_ID: "contabilidad-group"

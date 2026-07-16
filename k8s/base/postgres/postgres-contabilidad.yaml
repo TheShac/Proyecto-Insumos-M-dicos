@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-contabilidad-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-contabilidad
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: postgres-contabilidad
+
+  template:
+    metadata:
+      labels:
+        app: postgres-contabilidad
+
+    spec:
+      containers:
+        - name: postgres
+
+          image: postgres:17-alpine
+
+          ports:
+            - containerPort: 5432
+
+          env:
+            - name: POSTGRES_DB
+              value: contabilidad_db
+
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: secret-contabilidad
+                  key: DB_USER
+
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: secret-contabilidad
+                  key: DB_PASSWORD
+
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgres-storage
+
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-contabilidad-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-contabilidad
+
+spec:
+  selector:
+    app: postgres-contabilidad
+
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+  type: ClusterIP

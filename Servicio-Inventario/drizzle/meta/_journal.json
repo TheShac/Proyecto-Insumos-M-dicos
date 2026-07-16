@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1783471888091,
+      "tag": "0000_public_snowbird",
+      "breakpoints": true
+    }
+  ]
+}
