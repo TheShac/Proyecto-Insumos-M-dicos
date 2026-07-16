@@ -79,7 +79,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./Servicio-Contabilidad
-          file: ./Servicio-Contabilidad/dockerfile
+          file: ./Servicio-Contabilidad/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ steps.repo.outputs.name }}/servicio-contabilidad:${{ steps.vars.outputs.tag }}
@@ -98,6 +98,7 @@ jobs:
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+          echo "KUBECONFIG=$HOME/.kube/config" >> "$GITHUB_ENV"
       - name: Actualizar imagen en el Deployment
         env:
           NAMESPACE: grupo5-${{ needs.docker-build-push.outputs.env_name }}
