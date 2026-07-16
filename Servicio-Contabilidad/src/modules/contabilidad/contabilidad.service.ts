@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, desc, inArray } from "drizzle-orm";
 import { db } from "../../config/db";
 import {
   tarifas,
@@ -7,6 +7,26 @@ import {
   cuentaItems,
 } from "../../db/schema";
 import type { StockReservadoDatos, CuentaEmitidaDatos } from "./contabilidad.contracts";
+
+export async function listarCuentas(limite = 50) {
+  const cuentas = await db
+    .select()
+    .from(cuentasMedicas)
+    .orderBy(desc(cuentasMedicas.createdAt))
+    .limit(limite);
+
+  if (cuentas.length === 0) return cuentas;
+
+  const items = await db
+    .select()
+    .from(cuentaItems)
+    .where(inArray(cuentaItems.cuentaId, cuentas.map((c) => c.cuentaId)));
+
+  return cuentas.map((c) => ({
+    ...c,
+    items: items.filter((i) => i.cuentaId === c.cuentaId),
+  }));
+}
 
 function generarFolio(numero: number): string {
   const anio = new Date().getFullYear();

@@ -1,0 +1,31 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "Pedidos (pedidos_db)",
+      "Group": "Insumos Médicos",
+      "Host": "postgres-pedidos",
+      "Port": 5432,
+      "MaintenanceDB": "pedidos_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    },
+    "2": {
+      "Name": "Inventario (inventario_db)",
+      "Group": "Insumos Médicos",
+      "Host": "postgres-inventario",
+      "Port": 5432,
+      "MaintenanceDB": "inventario_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    },
+    "3": {
+      "Name": "Contabilidad (contabilidad_db)",
+      "Group": "Insumos Médicos",
+      "Host": "postgres-contabilidad",
+      "Port": 5432,
+      "MaintenanceDB": "contabilidad_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}

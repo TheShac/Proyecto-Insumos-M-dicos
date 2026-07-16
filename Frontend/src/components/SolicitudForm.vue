@@ -2,7 +2,7 @@
 import { reactive, ref, computed } from "vue";
 import { CATALOGO } from "../lib/api";
 
-defineProps({ enviando: Boolean });
+defineProps({ enviando: Boolean, errorEnvio: String });
 const emit = defineEmits(["solicitar"]);
 
 // ─── Formatos exigidos ───
@@ -54,17 +54,19 @@ const formValido = computed(() => {
 function enviar() {
   if (!formValido.value) return;
 
-  for (const it of items.value) {
-    emit("solicitar", {
+  // Un solo POST con el contrato que exige el Servicio de Pedidos:
+  // { nombre_enfermero, pabellon, ficha_paciente?, items: [{insumo, cantidad}] }
+  emit("solicitar", {
+    nombre_enfermero: datosComunes.enfermeroId.trim(),
+    pabellon: datosComunes.pabellon.trim().toUpperCase(),
+    ficha_paciente: datosComunes.fichaPaciente.trim() || undefined,
+    items: items.value.map((it) => ({
       insumo: it.insumo,
       cantidad: Number(it.cantidad),
-      pabellon: datosComunes.pabellon.trim().toUpperCase(),
-      enfermeroId: datosComunes.enfermeroId.trim(),
-      fichaPaciente: datosComunes.fichaPaciente.trim() || undefined,
-    });
-  }
+    })),
+  });
 
-  confirmacion.value = `Pedido recibido (${items.value.length} insumo${
+  confirmacion.value = `Pedido enviado (${items.value.length} insumo${
     items.value.length > 1 ? "s" : ""
   }). Búsqueda en bodegas iniciada.`;
   items.value = [itemVacio()];
@@ -176,7 +178,8 @@ function enviar() {
       </button>
     </div>
 
-    <p v-if="confirmacion" class="confirm">{{ confirmacion }}</p>
+    <p v-if="errorEnvio" class="error-msg">{{ errorEnvio }}</p>
+    <p v-else-if="confirmacion" class="confirm">{{ confirmacion }}</p>
     <p v-else-if="!formValido" class="hint">
       Completa enfermero, pabellón (formato UCI-#) y elige un insumo en cada
       fila para habilitar el envío.

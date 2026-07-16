@@ -12,6 +12,7 @@ const {
   eventos,
   conectado,
   enviando,
+  errorEnvio,
   inventario,
   facturas,
   cargarTodo,
@@ -43,7 +44,11 @@ onMounted(() => {
     <main class="layout">
       <!-- Fila 1: Formulario 40% + Inventario 60% -->
       <div class="fila-superior">
-        <SolicitudForm :enviando="enviando" @solicitar="solicitar" />
+        <SolicitudForm
+          :enviando="enviando"
+          :error-envio="errorEnvio"
+          @solicitar="solicitar"
+        />
         <InventarioPanel :inventario="inventario" />
       </div>
 

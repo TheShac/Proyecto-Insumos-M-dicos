@@ -1,0 +1,172 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: respaldos-pedidos-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: respaldos-inventario-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: respaldos-contabilidad-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: respaldo-pedidos
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:16-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-pedido
+                      key: DB_PASSWORD
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-pedido
+                      key: DB_USER
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  ARCHIVO=/respaldos/pedidos_$(date +%Y%m%d_%H%M%S).sql.gz
+                  pg_dump -h postgres-pedidos -U "$DB_USER" pedidos_db | gzip > "$ARCHIVO"
+                  echo "Respaldo creado: $ARCHIVO"
+                  ls -1t /respaldos/*.sql.gz | tail -n +37 | xargs -r rm -f
+              volumeMounts:
+                - name: respaldos
+                  mountPath: /respaldos
+          volumes:
+            - name: respaldos
+              persistentVolumeClaim:
+                claimName: respaldos-pedidos-pvc
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: respaldo-inventario
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:17-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-inventario
+                      key: DB_PASSWORD
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-inventario
+                      key: DB_USER
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  ARCHIVO=/respaldos/inventario_$(date +%Y%m%d_%H%M%S).sql.gz
+                  pg_dump -h postgres-inventario -U "$DB_USER" inventario_db | gzip > "$ARCHIVO"
+                  echo "Respaldo creado: $ARCHIVO"
+                  ls -1t /respaldos/*.sql.gz | tail -n +37 | xargs -r rm -f
+              volumeMounts:
+                - name: respaldos
+                  mountPath: /respaldos
+          volumes:
+            - name: respaldos
+              persistentVolumeClaim:
+                claimName: respaldos-inventario-pvc
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: respaldo-contabilidad
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: postgres:17-alpine
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-contabilidad
+                      key: DB_PASSWORD
+                - name: DB_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: secret-contabilidad
+                      key: DB_USER
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -e
+                  ARCHIVO=/respaldos/contabilidad_$(date +%Y%m%d_%H%M%S).sql.gz
+                  pg_dump -h postgres-contabilidad -U "$DB_USER" contabilidad_db | gzip > "$ARCHIVO"
+                  echo "Respaldo creado: $ARCHIVO"
+                  ls -1t /respaldos/*.sql.gz | tail -n +37 | xargs -r rm -f
+              volumeMounts:
+                - name: respaldos
+                  mountPath: /respaldos
+          volumes:
+            - name: respaldos
+              persistentVolumeClaim:
+                claimName: respaldos-contabilidad-pvc

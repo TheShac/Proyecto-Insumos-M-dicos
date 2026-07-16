@@ -20,8 +20,9 @@ COPY package.json ./
 RUN pnpm install --no-frozen-lockfile --prod
 
 COPY --from=builder /app/dist ./dist
-#COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/drizzle ./drizzle
 
 EXPOSE 3002
 
-CMD ["node", "dist/server.js"]
+# Aplica las migraciones pendientes y luego levanta el servidor
+CMD ["sh", "-c", "node dist/db/migrate.js && node dist/server.js"]

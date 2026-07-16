@@ -1,6 +1,20 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { db } from "../../config/db";
 import { unidadesInsumo, reservas } from "../../db/schema";
+
+export async function consultarStock() {
+  return db
+    .select({
+      insumo: unidadesInsumo.insumo,
+      disponibles: sql<number>`count(*) filter (where ${unidadesInsumo.estado} = 'DISPONIBLE')`.mapWith(Number),
+      reservadas: sql<number>`count(*) filter (where ${unidadesInsumo.estado} = 'RESERVADO')`.mapWith(Number),
+      despachadas: sql<number>`count(*) filter (where ${unidadesInsumo.estado} = 'DESPACHADO')`.mapWith(Number),
+      total: sql<number>`count(*)`.mapWith(Number),
+    })
+    .from(unidadesInsumo)
+    .groupBy(unidadesInsumo.insumo)
+    .orderBy(unidadesInsumo.insumo);
+}
 
 type ResultadoReserva = {
   estado: "RESERVADO" | "SIN_STOCK";

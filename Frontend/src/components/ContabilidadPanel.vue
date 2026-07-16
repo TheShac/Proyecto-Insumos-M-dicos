@@ -2,6 +2,14 @@
 import { formatoPesos, nombreInsumo, hora } from "../lib/api";
 
 defineProps({ facturas: Array });
+
+// Cada cuenta llega como {cuentaId, pedidoId, fichaPaciente, costoTotal, createdAt, items[]}
+function detalleItems(f) {
+  if (!f.items?.length) return "Sin ítems facturables (sin stock)";
+  return f.items
+    .map((i) => `${i.cantidad}× ${nombreInsumo(i.insumo)}`)
+    .join(", ");
+}
 </script>
 
 <template>
@@ -32,19 +40,14 @@ defineProps({ facturas: Array });
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(f, idx) in facturas"
-            :key="f.ficha + '-' + f.insumo + '-' + f.timestamp + '-' + idx"
-            class="fila-factura"
-          >
+          <tr v-for="f in facturas" :key="f.cuentaId" class="fila-factura">
             <td>
-              <div class="badge-ficha">{{ f.ficha }}</div>
+              <div class="badge-ficha">{{ f.cuentaId }}</div>
+              <div class="ficha-secundaria">{{ f.fichaPaciente ?? "sin ficha" }}</div>
             </td>
-            <td class="text-insumo">
-              {{ f.cantidad }}× {{ nombreInsumo(f.insumo) }}
-            </td>
-            <td class="monto-total">{{ formatoPesos(f.monto) }}</td>
-            <td class="hora-registro">{{ hora(f.timestamp) }}</td>
+            <td class="text-insumo">{{ detalleItems(f) }}</td>
+            <td class="monto-total">{{ formatoPesos(f.costoTotal) }}</td>
+            <td class="hora-registro">{{ hora(f.createdAt) }}</td>
           </tr>
         </tbody>
       </table>
@@ -84,6 +87,12 @@ defineProps({ facturas: Array });
   border-radius: 4px;
   display: inline-block;
   font-weight: bold;
+}
+.ficha-secundaria {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 4px;
 }
 .text-insumo {
   color: var(--text);

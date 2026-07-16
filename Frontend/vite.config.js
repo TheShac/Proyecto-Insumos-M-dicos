@@ -12,9 +12,10 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts: [".uta.cl"],
     proxy: {
       "/api": {
-        target: "http://api-gateway", 
+        target: process.env.API_PROXY_TARGET || "http://api-gateway",
         changeOrigin: true,
       },
     },

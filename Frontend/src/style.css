@@ -27,6 +27,7 @@
   --st-recibido: #94a3b8;
   --st-buscando: #f5b341;
   --st-reservado: #005eb8;
+  --st-parcial: #a855f7;
   --st-sinstock: #ef4444;
   --st-completado: #22c55e;
 
@@ -354,6 +355,11 @@ select:focus {
   background: rgba(0, 94, 184, 0.14);
   border-color: rgba(0, 94, 184, 0.4);
 }
+.badge.parcial {
+  color: var(--st-parcial);
+  background: rgba(168, 85, 247, 0.12);
+  border-color: rgba(168, 85, 247, 0.35);
+}
 .badge.sinstock {
   color: var(--st-sinstock);
   background: rgba(239, 68, 68, 0.13);
@@ -421,6 +427,9 @@ select:focus {
 }
 .dot.reservado {
   background: var(--st-reservado);
+}
+.dot.parcial {
+  background: var(--st-parcial);
 }
 .dot.sinstock {
   background: var(--st-sinstock);

@@ -1,7 +1,16 @@
 <script setup>
-import { ESTADOS, nombreInsumo, formatoPesos, hora } from "../lib/api";
+import { estadoInfo, nombreInsumo, formatoPesos, hora } from "../lib/api";
 
 defineProps({ pedidos: Array });
+
+// El backend entrega cada pedido con su lista de items:
+// {id, nombreEnfermero, pabellon, fichaPaciente, estado, costoTotal, createdAt, items[]}
+function resumenItems(p) {
+  if (!p.items?.length) return p.id;
+  return p.items
+    .map((i) => `${i.cantidad}× ${nombreInsumo(i.insumo)}`)
+    .join(", ");
+}
 </script>
 
 <template>
@@ -18,15 +27,15 @@ defineProps({ pedidos: Array });
     <ul v-else class="lista">
       <li v-for="p in pedidos" :key="p.id" class="pedido">
         <div class="pedido-main">
-          <strong>{{ p.cantidad }}× {{ nombreInsumo(p.insumo) }}</strong>
+          <strong>{{ resumenItems(p) }}</strong>
           <span class="meta">
-            {{ p.pabellon }} · {{ p.fichaPaciente ?? "sin ficha" }} · Enf. {{ p.enfermeroId }}
+            {{ p.pabellon }} · {{ p.fichaPaciente ?? "sin ficha" }} · Enf. {{ p.nombreEnfermero }}
             · {{ hora(p.createdAt) }}
           </span>
         </div>
         <div class="pedido-side">
           <span v-if="p.costoTotal" class="costo">{{ formatoPesos(p.costoTotal) }}</span>
-          <span class="badge" :class="ESTADOS[p.estado].cls">{{ ESTADOS[p.estado].label }}</span>
+          <span class="badge" :class="estadoInfo(p.estado).cls">{{ estadoInfo(p.estado).label }}</span>
         </div>
       </li>
     </ul>

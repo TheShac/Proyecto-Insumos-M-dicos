@@ -4,4 +4,28 @@ kind: Kustomization
 namespace: grupo5-prod
 
 resources:
+  - namespace.yaml
   - ../../base
+
+# Las imágenes :prod las publica GitHub Actions en cada push a main
+images:
+  - name: ghcr.io/theshac/servicio-gestion-pedido
+    newTag: prod
+  - name: ghcr.io/theshac/servicio-inventario
+    newTag: prod
+  - name: ghcr.io/theshac/servicio-contabilidad
+    newTag: prod
+  - name: ghcr.io/theshac/frontend
+    newTag: prod
+  - name: ghcr.io/theshac/api-gateway
+    newTag: prod
+
+# En producción se entra por prod.grupo5.uta.cl
+patches:
+  - target:
+      kind: Ingress
+      name: insumos-ingress
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: prod.grupo5.uta.cl

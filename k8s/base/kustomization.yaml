@@ -25,3 +25,13 @@ resources:
   - services/servicio-pedido.yaml
   - services/servicio-inventario.yaml
   - services/servicio-contabilidad.yaml
+
+  # Frontend y API Gateway
+  - frontend.yaml
+  - gateway.yaml
+
+  # Acceso por dominio (Traefik de k3s)
+  - ingress.yaml
+
+  # Respaldos automáticos cada 10 minutos
+  - backups.yaml

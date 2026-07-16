@@ -1,5 +1,5 @@
 <script setup>
-import { ESTADOS, hora } from "../lib/api";
+import { estadoInfo, hora } from "../lib/api";
 
 defineProps({ eventos: Array, conectado: Boolean });
 </script>
@@ -20,7 +20,7 @@ defineProps({ eventos: Array, conectado: Boolean });
 
     <ol v-else class="timeline">
       <li v-for="ev in eventos" :key="ev.key" class="evento">
-        <span class="dot" :class="ESTADOS[ev.estado].cls" />
+        <span class="dot" :class="estadoInfo(ev.estado).cls" />
         <div class="evento-body">
           <div class="evento-head">
             <span class="svc">{{ ev.servicio }}</span>
