@@ -11,7 +11,15 @@ const CATALOGO = [
 ];
 
 async function seed() {
-  await db.delete(unidadesInsumo);
+  const yaHayDatos = await db
+    .select({ id: unidadesInsumo.id })
+    .from(unidadesInsumo)
+    .limit(1);
+
+  if (yaHayDatos.length > 0) {
+    console.log("[S2] La tabla 'unidades_insumo' ya tiene datos; se omite el seed.");
+    process.exit(0);
+  }
 
   const filas = CATALOGO.flatMap(({ insumo, prefijo, stock }) =>
     Array.from({ length: stock }, (_, i) => ({
@@ -23,7 +31,7 @@ async function seed() {
   );
 
   if (filas.length > 0) {
-    await db.insert(unidadesInsumo).values(filas);
+    await db.insert(unidadesInsumo).values(filas).onConflictDoNothing();
   }
 
   console.log(`[S2] Seed completado:`);

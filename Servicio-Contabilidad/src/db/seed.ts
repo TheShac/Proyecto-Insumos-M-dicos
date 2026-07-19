@@ -11,8 +11,17 @@ const TARIFAS = [
 ];
 
 async function seed() {
-  await db.delete(tarifas);
-  await db.insert(tarifas).values(TARIFAS);
+  const yaHayDatos = await db
+    .select({ insumo: tarifas.insumo })
+    .from(tarifas)
+    .limit(1);
+
+  if (yaHayDatos.length > 0) {
+    console.log("[S3] La tabla 'tarifas' ya tiene datos; se omite el seed.");
+    process.exit(0);
+  }
+
+  await db.insert(tarifas).values(TARIFAS).onConflictDoNothing();
 
   console.log("[S3] Seed completado:");
   for (const t of TARIFAS) {
