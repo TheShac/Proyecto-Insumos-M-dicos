@@ -24,5 +24,5 @@ COPY --from=builder /app/drizzle ./drizzle
 
 EXPOSE 3002
 
-# Aplica las migraciones pendientes y luego levanta el servidor
-CMD ["sh", "-c", "node dist/db/migrate.js && node dist/server.js"]
+# Aplica migraciones, siembra datos iniciales (idempotente) y levanta el servidor
+CMD ["sh", "-c", "node dist/db/migrate.js && node dist/db/seed.js && node dist/server.js"]
