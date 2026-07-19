@@ -1,0 +1,5 @@
+# Variables de entorno con secretos (usar .env.example como plantilla)
+.env
+
+node_modules/
+dist/

@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: grupo5-qa
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+# Tags que publica GitHub Actions en cada push a develop
+images:
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-gestion-pedido
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-inventario
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-contabilidad
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/frontend
+    newTag: qa-latest
+  - name: ghcr.io/theshac/proyecto-insumos-m-dicos/api-gateway
+    newTag: qa-latest

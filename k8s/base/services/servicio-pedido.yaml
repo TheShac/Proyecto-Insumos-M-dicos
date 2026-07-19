@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: servicio-gestion-pedido
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: servicio-gestion-pedido
+
+  template:
+    metadata:
+      labels:
+        app: servicio-gestion-pedido
+
+    spec:
+      containers:
+        - name: servicio-gestion-pedido
+
+          image: ghcr.io/theshac/proyecto-insumos-m-dicos/servicio-gestion-pedido:latest
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 3001
+
+          envFrom:
+            - configMapRef:
+                name: config-pedido
+
+            - secretRef:
+                name: secret-pedido
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "384Mi"
+
+          # El arranque incluye migraciones + unión al grupo Kafka (~20-30s)
+          startupProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 5
+            failureThreshold: 24
+
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 10
+
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            periodSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: servicio-gestion-pedido
+
+spec:
+  selector:
+    app: servicio-gestion-pedido
+
+  ports:
+    - name: http
+      port: 3001
+      targetPort: http
+
+  type: ClusterIP

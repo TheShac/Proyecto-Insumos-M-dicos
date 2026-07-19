@@ -1,0 +1,349 @@
+services:
+
+  # ===========================
+  # KAFKA
+  # ===========================
+
+  kafka:
+    image: apache/kafka:3.8.0
+    container_name: kafka
+    ports:
+      - "${KAFKA_PORT:-9092}:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: HOST://0.0.0.0:9092,DOCKER://0.0.0.0:29092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,HOST:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      CLUSTER_ID: "5L6g3nShT-eMCtK--X86sw"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend-network
+
+  # ===========================
+  # KAFKA UI
+  # ===========================
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "${KAFKA_UI_PORT:-8080}:8080"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    restart: unless-stopped
+    networks:
+      - backend-network
+
+  # ===========================
+  # POSTGRES PEDIDOS
+  # ===========================
+
+  postgres-pedidos:
+    image: postgres:16-alpine
+    container_name: postgres-pedidos
+    ports:
+      - "${POSTGRES_PEDIDOS_PORT:-5433}:5432"
+    environment:
+      POSTGRES_DB: pedidos_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_pedidos_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d pedidos_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - pedidos-network
+
+  respaldo-pedidos:
+    image: prodrigestivill/postgres-backup-local:16-alpine
+    container_name: respaldo-pedidos
+    restart: unless-stopped
+    depends_on:
+      postgres-pedidos:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres-pedidos
+      POSTGRES_DB: pedidos_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+      SCHEDULE: "@every 10m"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - backups_pedidos:/backups
+    networks:
+      - pedidos-network
+
+  # ===========================
+  # POSTGRES INVENTARIO
+  # ===========================
+
+  postgres-inventario:
+    image: postgres:16-alpine
+    container_name: postgres-inventario
+    ports:
+      - "${POSTGRES_INVENTARIO_PORT:-5434}:5432"
+    environment:
+      POSTGRES_DB: inventario_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_inventario_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inventario_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - inventario-network
+
+  respaldo-inventario:
+    image: prodrigestivill/postgres-backup-local:16-alpine
+    container_name: respaldo-inventario
+    restart: unless-stopped
+    depends_on:
+      postgres-inventario:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres-inventario
+      POSTGRES_DB: inventario_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+      SCHEDULE: "@every 10m"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - backups_inventario:/backups
+    networks:
+      - inventario-network
+
+  # ===========================
+  # POSTGRES CONTABILIDAD
+  # ===========================
+
+  postgres-contabilidad:
+    image: postgres:16-alpine
+    container_name: postgres-contabilidad
+    ports:
+      - "${POSTGRES_CONTABILIDAD_PORT:-5435}:5432"
+    environment:
+      POSTGRES_DB: contabilidad_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_contabilidad_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d contabilidad_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - contabilidad-network
+
+  respaldo-contabilidad:
+    image: prodrigestivill/postgres-backup-local:16-alpine
+    container_name: respaldo-contabilidad
+    restart: unless-stopped
+    depends_on:
+      postgres-contabilidad:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres-contabilidad
+      POSTGRES_DB: contabilidad_db
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
+      SCHEDULE: "@every 10m"
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+    volumes:
+      - backups_contabilidad:/backups
+    networks:
+      - contabilidad-network
+
+  # ===========================
+  # SERVICIO PEDIDOS
+  # ===========================
+
+  servicio-gestion-pedido:
+    build:
+      context: ./Servicio-Gestion-Pedido
+    container_name: servicio-gestion-pedido
+    restart: unless-stopped
+    environment:
+      PORT: ${PEDIDOS_PORT:-3001}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres-pedidos:5432/pedidos_db
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: servicio-pedidos
+      KAFKA_GROUP_ID: pedidos-group
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres-pedidos:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - pedidos-network
+
+  # ===========================
+  # SERVICIO INVENTARIO
+  # ===========================
+
+  servicio-inventario:
+    build:
+      context: ./Servicio-Inventario
+    container_name: servicio-inventario
+    restart: unless-stopped
+    environment:
+      PORT: ${INVENTARIO_PORT:-3002}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres-inventario:5432/inventario_db
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: servicio-inventario
+      KAFKA_GROUP_ID: inventario-group
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres-inventario:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - inventario-network
+
+  # ===========================
+  # SERVICIO CONTABILIDAD
+  # ===========================
+
+  servicio-contabilidad:
+    build:
+      context: ./Servicio-Contabilidad
+    container_name: servicio-contabilidad
+    restart: unless-stopped
+    environment:
+      PORT: ${CONTABILIDAD_PORT:-3003}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@postgres-contabilidad:5432/contabilidad_db
+      KAFKA_BROKERS: kafka:29092
+      KAFKA_CLIENT_ID: servicio-contabilidad
+      KAFKA_GROUP_ID: contabilidad-group
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres-contabilidad:
+        condition: service_healthy
+    networks:
+      - backend-network
+      - contabilidad-network
+
+  # ===========================
+  # PGADMIN (visor de las BDs)
+  # ===========================
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: unless-stopped
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@insumos.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Definir PGADMIN_DEFAULT_PASSWORD en .env}
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      postgres-pedidos:
+        condition: service_healthy
+      postgres-inventario:
+        condition: service_healthy
+      postgres-contabilidad:
+        condition: service_healthy
+    networks:
+      - pedidos-network
+      - inventario-network
+      - contabilidad-network
+
+  # ===========================
+  # FRONTEND
+  # ===========================
+
+  frontend:
+    build:
+      context: ./Frontend
+    container_name: frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    restart: unless-stopped
+    networks:
+      - backend-network
+
+  # ===========================
+  # API GATEWAY
+  # ===========================
+
+  api-gateway:
+    build:
+      context: ./Api-gateway
+    container_name: api-gateway
+    ports:
+      - "${GATEWAY_PORT:-80}:80"
+    environment:
+      # Puertos internos de los microservicios: nginx los sustituye
+      # en nginx.conf.template al arrancar (envsubst).
+      PEDIDOS_PORT: ${PEDIDOS_PORT:-3001}
+      INVENTARIO_PORT: ${INVENTARIO_PORT:-3002}
+      CONTABILIDAD_PORT: ${CONTABILIDAD_PORT:-3003}
+    restart: unless-stopped
+    depends_on:
+      - servicio-gestion-pedido
+      - servicio-inventario
+      - servicio-contabilidad
+    networks:
+      - backend-network
+
+volumes:
+  kafka_data:
+  pgadmin_data:
+  postgres_pedidos_data:
+  postgres_inventario_data:
+  postgres_contabilidad_data:
+  backups_pedidos:
+  backups_inventario:
+  backups_contabilidad:
+
+networks:
+  backend-network:
+    driver: bridge
+  pedidos-network:
+    driver: bridge
+  inventario-network:
+    driver: bridge
+  contabilidad-network:
+    driver: bridge
