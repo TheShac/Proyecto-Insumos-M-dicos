@@ -1,27 +1,35 @@
-Sistema de Monitoreo de Insumos Médicos
+# Sistema de Monitoreo de Insumos Médicos
 
-Una plataforma distribuida para la trazabilidad y gestión de insumos médicos hospitalarios. Este sistema permite a los profesionales de la salud solicitar insumos, reservar stock y emitir cobros de manera asíncrona, garantizando la resiliencia y escalabilidad de las operaciones.
+## Descripción del Proyecto
+Plataforma distribuida desarrollada para gestionar la trazabilidad, reserva y valorización de insumos médicos hospitalarios. El sistema implementa una arquitectura de microservicios orientada a eventos, lo que permite un procesamiento asíncrono y resiliente, evitando el acoplamiento directo entre los dominios de negocio.
 
-Arquitectura del Sistema
+## Arquitectura y Tecnologías Implementadas
 
-El proyecto está construido bajo una **Arquitectura de Microservicios Orientada a Eventos**:
+El ecosistema se divide en componentes independientes comunicados a través de un bus de eventos (Apache Kafka):
 
-- **Frontend:** Interfaz de usuario desarrollada en Vue.js.
-- **API Gateway:** NGINX actuando como proxy inverso y enrutador central.
-- **Microservicios (Node.js / TypeScript):**
-  - `Servicio-Pedido`: Gestiona la creación y estado de las solicitudes.
-  - `Servicio-Inventario`: Valida existencias y reserva unidades físicas.
-  - `Servicio-Contabilidad`: Calcula costos y emite las cuentas.
-- **Bus de Eventos:** Apache Kafka orquesta la comunicación asíncrona entre servicios (eventos como `PEDIDO_CREADO` o `STOCK_RESERVADO`).
-- **Bases de Datos:** Patrón *Database-per-service* utilizando PostgreSQL para asegurar el aislamiento de datos.
+- **Cliente (Frontend):** Aplicación de página única (SPA) desarrollada con Vue.js y Vite.
+- **API Gateway:** Implementado con NGINX actuando como proxy inverso para centralizar el enrutamiento y proteger la red interna.
+- **Microservicios Backend (Node.js y TypeScript):**
+  - `Servicio-Gestion-Pedido`: Administra el ciclo de vida de las solicitudes médicas.
+  - `Servicio-Inventario`: Valida el stock físico y gestiona las reservas.
+  - `Servicio-Contabilidad`: Calcula costos y emite las cuentas asociadas a cada ficha médica.
+- **Persistencia y ORM:** Se aplica el patrón *Database-per-Service* utilizando PostgreSQL. La interacción con la base de datos se realiza mediante **Drizzle ORM** para asegurar el tipado estricto y la gestión de migraciones.
+- **Gestión de Dependencias:** El proyecto utiliza `pnpm` configurado mediante `pnpm-workspace.yaml` para administrar el entorno de monorepo.
 
-Despliegue Local
+## Estructura del Repositorio
 
-Para levantar el ecosistema completo en tu máquina local:
+El código fuente separa estrictamente la lógica de aplicación de la configuración de infraestructura:
 
-1. Clona este repositorio.
-2. Asegúrate de tener Docker y Docker Compose instalados.
-3. Ejecuta el siguiente comando en la raíz del proyecto:
+- `.github/workflows/`: Definición de pipelines de CI/CD independientes para cada servicio.
+- `Api-gateway/`, `Frontend/`, `Servicio-*/`: Código fuente de los servicios aislados.
+- `k8s/`: Manifiestos de Kubernetes utilizando Kustomize (`base`, `overlays/qa`, `overlays/prod`) para la gestión de múltiples entornos.
+- `scripts/`: Herramientas bash para automatización de despliegue y mantenimiento local.
+
+## Instrucciones de Despliegue Local
+
+Para levantar la infraestructura de desarrollo en una máquina local, es necesario contar con Docker y Docker Compose instalados.
+
+1. **Configuración de variables de entorno:**
+   Copie el archivo de ejemplo en la raíz del proyecto para generar sus credenciales locales:
    ```bash
-   docker compose up --build
-
+   cp .env.example .env
