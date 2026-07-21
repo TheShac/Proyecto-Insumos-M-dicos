@@ -18,6 +18,15 @@ Los usuarios acceden por HTTP al **Frontend (Vue.js)**, que enruta todas las lla
 4. **S1** actualiza el estado del pedido; **S3** acumula ítems hasta completar el pedido y emite la cuenta en `insumos.proceso.completado`.
 5. **S1** marca el pedido como `COMPLETADO` y registra el costo total.
 
+### 1.1 Topología del Clúster
+
+El despliegue en Kubernetes (K3s) se ejecuta sobre dos nodos físicos:
+
+- **`svr1` (Nodo Híbrido):** configurado como plano de control (*Control Plane*) para la administración del clúster y simultáneamente como nodo de trabajo (*Worker Node*) para la ejecución de cargas.
+- **`svr2` (Nodo de Carga):** aprovisionado exclusivamente como nodo de trabajo (*Worker Node*) para distribuir horizontalmente los microservicios.
+
+Sobre esta topología, los Deployments de `frontend` y `api-gateway` declaran `replicas: 2` con `podAntiAffinity` sobre `kubernetes.io/hostname`, de modo que el planificador reparta las réplicas entre ambos nodos y el servicio siga disponible ante la caída de uno de ellos.
+
 ---
 
 ## 2. Contrato de Datos
