@@ -6,59 +6,9 @@ Plataforma distribuida para gestionar la trazabilidad, reserva y valorización d
 
 ## 1. Diagrama Arquitectónico
 
-El flujo principal de un pedido atraviesa el cliente, el gateway HTTP y los tres servicios lógicos. La coordinación entre dominios ocurre exclusivamente por el broker de mensajería (colas/tópicos Kafka).
+Los usuarios acceden por HTTP al **Frontend (Vue.js)**, que enruta todas las llamadas `/api` a través del **API Gateway (NGINX)**. Detrás del gateway, los tres microservicios Node.js — **S1 Servicio Pedido**, **S2 Servicio Inventario** y **S3 Servicio Contabilidad** — se coordinan exclusivamente mediante eventos **Kafka** (S1 → evento → S2 → evento → S3), sin llamadas HTTP directas entre dominios. Cada servicio persiste en su propia base **PostgreSQL** (`pedidos_db`, `inventario_db`, `contabilidad_db`, patrón Database-per-Service), con **respaldos automáticos** hacia volúmenes persistentes dedicados. El sistema se publica bajo los dominios de **QA** y **PROD** (`qa.grupo5.uta.cl` / `prod.grupo5.uta.cl`).
 
-```mermaid
-flowchart TB
-    subgraph Cliente["Capa de presentación"]
-        FE["Frontend (Vue.js)"]
-    end
-
-    subgraph Gateway["Punto de entrada HTTP"]
-        NGX["API Gateway (NGINX)"]
-    end
-
-    subgraph Servicios["Servicios lógicos"]
-        S1["S1 — Gestión de Pedidos"]
-        S2["S2 — Inventario"]
-        S3["S3 — Contabilidad"]
-    end
-
-    subgraph Broker["Broker de mensajería"]
-        K["Apache Kafka"]
-        T1["insumos.pedido.creado"]
-        T2["insumos.reservado"]
-        T3["insumos.proceso.completado"]
-    end
-
-    subgraph DB["Persistencia (Database-per-Service)"]
-        DB1[("PostgreSQL pedidos_db")]
-        DB2[("PostgreSQL inventario_db")]
-        DB3[("PostgreSQL contabilidad_db")]
-    end
-
-    FE -->|"REST + SSE"| NGX
-    NGX -->|"/api/pedidos"| S1
-    NGX -->|"/api/inventario"| S2
-    NGX -->|"/api/contabilidad"| S3
-
-    S1 -->|"publica"| T1
-    T1 --> K
-    K -->|"consume"| S2
-
-    S2 -->|"publica (1 msg por ítem)"| T2
-    T2 --> K
-    K -->|"consume"| S1
-    K -->|"consume"| S3
-
-    S3 -->|"publica (cuando todos los ítems llegaron)"| T3
-    T3 --> K
-    K -->|"consume"| S1
-
-    S1 --- DB1
-    S2 --- DB2
-    S3 --- DB3
-```
+![Arquitectura](docs/Arquitectura.png)
 
 **Secuencia del mensaje (happy path):**
 
@@ -446,6 +396,20 @@ docker exec kafka /opt/kafka/bin/kafka-topics.sh \
 
 ---
 
+## 5. CI/CD — GitHub Actions
+
+Cada componente (Frontend, API Gateway y los 3 microservicios) tiene su propio pipeline en `.github/workflows/`. El flujo es idéntico para todos y está gobernado por la rama de origen: un push a **`develop`** construye/testea, publica la imagen Docker en **ghcr.io** y despliega al **entorno QA** (`grupo5-qa`); un push a **`main`** ejecuta el mismo pipeline hacia el **entorno PROD** (`grupo5-prod`). Ambos entornos ejecutan el stack completo: NGINX, Vue.js, los servicios Node.js, Kafka y las tres bases PostgreSQL (`pedidos_db`, `inventario_db`, `contabilidad_db`).
+
+![Workflow CI/CD](docs/Workflow.png)
+
+Etapas de cada pipeline:
+
+1. **Build & Test** — compila el componente (omitido en API Gateway, que es NGINX + configuración estática).
+2. **Build & Push Docker** — construye la imagen y la publica en `ghcr.io/<repo>/<componente>` con tags `qa-latest`/`prod-latest` y `<env>-<sha>`.
+3. **Deploy** — `kubectl set image` sobre el Deployment correspondiente en el namespace del entorno, con verificación de rollout.
+
+---
+
 ## Referencia del repositorio
 
 | Ruta | Contenido |
@@ -459,4 +423,4 @@ docker exec kafka /opt/kafka/bin/kafka-topics.sh \
 | `scripts/` | Automatización de despliegue, estado, logs y rollback |
 | `docker-compose.yml` | Stack completo para desarrollo local |
 
-**Stack tecnológico:** Node.js + TypeScript, Drizzle ORM, PostgreSQL 16, Apache Kafka 3.8, NGINX, Vue.js 3, pnpm (monorepo), GitHub Actions (CI/CD).
+**Stack tecnológico:** Node.js + TypeScript, Drizzle ORM, PostgreSQL 16/17 (16-alpine en Docker Compose y en la BD de pedidos en K8s; 17-alpine en las BDs de inventario y contabilidad en K8s), Apache Kafka 3.8, NGINX, Vue.js 3, GitHub Actions (CI/CD). Gestión de dependencias por componente: **npm** en `Frontend/` y **pnpm** en los tres microservicios (cada servicio con su propio lockfile; no existe un workspace pnpm a nivel de raíz).

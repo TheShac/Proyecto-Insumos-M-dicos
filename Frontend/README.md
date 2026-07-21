@@ -1,38 +1,33 @@
-# Frontend
+# Frontend — Sistema de Monitoreo de Insumos Médicos
 
-This template should help get you started developing with Vue 3 in Vite.
+SPA desarrollada con **Vue 3 + Vite** (Tailwind CSS 4). Muestra el dashboard de pedidos, stock de bodega, cuentas de contabilidad y el feed de eventos en tiempo real (SSE). Todas las llamadas a backend salen por `/api` y las enruta el API Gateway (NGINX).
 
-## Recommended IDE Setup
+> Este paquete usa **npm** (`package-lock.json`), a diferencia de los microservicios que usan pnpm.
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## Requisitos
 
-## Recommended Browser Setup
+- Node.js ≥ 18
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
+## Configuración del proyecto
 
 ```sh
-pnpm install
+npm install
 ```
 
-### Compile and Hot-Reload for Development
+### Desarrollo con hot-reload
 
 ```sh
-pnpm dev
+npm run dev
 ```
 
-### Compile and Minify for Production
+El proxy de desarrollo (ver `vite.config.js`) redirige `/api` hacia `API_PROXY_TARGET` (por defecto `http://api-gateway`, el gateway del stack de Docker Compose / Kubernetes).
+
+### Build de producción
 
 ```sh
-pnpm build
+npm run build
 ```
+
+## IDE recomendado
+
+[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (deshabilitar Vetur).
